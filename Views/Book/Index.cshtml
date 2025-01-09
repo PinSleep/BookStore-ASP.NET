@@ -1,0 +1,37 @@
+﻿@model IEnumerable<BookStore.Data.Book>
+
+<h2>List of Books</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Price</th>
+            @if (TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"])
+            {
+                <th>Actions</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var book in Model)
+        {
+            <tr>
+                <td>@book.Title</td>
+                <td>@book.Author</td>
+                <td>@book.Price</td>
+                @if (TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"])
+                {
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@book.Id" class="btn btn-warning">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@book.Id" class="btn btn-danger">Delete</a>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+@if (TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"])
+{
+    <a asp-action="Create" class="btn btn-primary">Add New Book</a>
+}
