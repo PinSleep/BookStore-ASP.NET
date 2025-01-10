@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using BookStore.Data;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookStore.Controllers
 {
     public class AccountController : Controller
     {
-        // Prosta baza użytkowników w pamięci
-        private static readonly Dictionary<string, string> Users = new Dictionary<string, string>();
+        private readonly LiteDBContext _dbContext;
 
-        // Lista użytkowników administracyjnych
-        private static readonly HashSet<string> AdminUsers = new HashSet<string> { "admin" };
+        public AccountController(LiteDBContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
 
         // Widok logowania
         public IActionResult Login()
@@ -21,12 +22,17 @@ namespace BookStore.Controllers
         [HttpPost]
         public IActionResult Login(string username, string password)
         {
-            if (Users.TryGetValue(username, out string storedPassword) && storedPassword == password)
+            var user = _dbContext.Users.FindOne(u => u.Username == username && u.Password == password);
+
+            if (user != null)
             {
-                TempData["Username"] = username;
-                TempData["IsAdmin"] = AdminUsers.Contains(username);
+                TempData["Username"] = user.Username;
+                TempData["IsAdmin"] = user.IsAdmin;
                 TempData.Keep();
-                return RedirectToAction("Index", "Home");
+
+                // Dodanie ciasteczka uwierzytelniającego
+                HttpContext.Response.Cookies.Append("Username", user.Username);
+                return RedirectToAction("Index", "Book");
             }
 
             ViewBag.Error = "Invalid username or password";
@@ -43,19 +49,26 @@ namespace BookStore.Controllers
         [HttpPost]
         public IActionResult Register(string username, string password)
         {
-            if (Users.ContainsKey(username))
+            if (_dbContext.Users.Exists(u => u.Username == username))
             {
                 ViewBag.Error = "User already exists.";
                 return View();
             }
 
-            // Dodajemy użytkownika do bazy
-            Users[username] = password;
+            var newUser = new User
+            {
+                Username = username,
+                Password = password,
+                IsAdmin = false // Domyślnie użytkownik nie jest adminem
+            };
+
+            _dbContext.Users.Insert(newUser);
 
             TempData["Username"] = username;
-            TempData["IsAdmin"] = AdminUsers.Contains(username);
+            TempData["IsAdmin"] = newUser.IsAdmin;
             TempData.Keep();
 
+            HttpContext.Response.Cookies.Append("Username", username);
             return RedirectToAction("Index", "Book");
         }
 
@@ -63,6 +76,7 @@ namespace BookStore.Controllers
         public IActionResult Logout()
         {
             TempData.Clear();
+            HttpContext.Response.Cookies.Delete("Username");
             return RedirectToAction("Index", "Book");
         }
     }
