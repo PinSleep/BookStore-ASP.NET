@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using BookStore.Data;
+using System.Linq;
 
 namespace BookStore.Controllers
 {
@@ -7,22 +8,34 @@ namespace BookStore.Controllers
     {
         private readonly LiteDBContext _context;
 
-        // Dependency Injection dla LiteDBContext
         public BookController(LiteDBContext context)
         {
             _context = context;
         }
 
-        private bool IsAdmin()
+        
+        public IActionResult Index(string searchTerm)
         {
-            // Sprawdzanie, czy użytkownik jest administratorem
-            return TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"];
+            
+            var books = _context.Books.FindAll();
+
+            
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                searchTerm = searchTerm.ToLower();
+                books = books.Where(b => b.Title.ToLower().Contains(searchTerm)
+                                      || b.Author.ToLower().Contains(searchTerm));
+            }
+
+            
+            return View(books);
         }
 
         [HttpGet]
         public IActionResult Create()
         {
-            if (!IsAdmin())
+            
+            if (!User.IsInRole("Admin"))
             {
                 return RedirectToAction("Index");
             }
@@ -32,76 +45,67 @@ namespace BookStore.Controllers
         [HttpPost]
         public IActionResult Create(Book book)
         {
-            if (!IsAdmin())
+            if (!User.IsInRole("Admin"))
             {
                 return RedirectToAction("Index");
             }
 
             if (ModelState.IsValid)
             {
-                _context.Books.Insert(book); // Wstawienie nowej książki do bazy.
+                _context.Books.Insert(book);
                 return RedirectToAction("Index");
             }
 
             return View(book);
         }
 
-        public IActionResult Index()
-        {
-            var books = _context.Books.FindAll(); // Pobieranie książek
-            return View(books); // Zwrócenie widoku z książkami
-        }
-
-        // Akcja edytowania książki
         [HttpGet]
         public IActionResult Edit(int id)
         {
-            if (!IsAdmin())
+            if (!User.IsInRole("Admin"))
             {
                 return RedirectToAction("Index");
             }
 
-            var book = _context.Books.FindById(id); // Znalezienie książki po ID
+            var book = _context.Books.FindById(id);
             if (book == null)
             {
                 return NotFound();
             }
-            return View(book); // Zwrócenie widoku edycji z książką
+            return View(book);
         }
 
-        // Akcja zapisywania zmian w książce
         [HttpPost]
         public IActionResult Edit(Book book)
         {
-            if (!IsAdmin())
+            if (!User.IsInRole("Admin"))
             {
                 return RedirectToAction("Index");
             }
 
             if (ModelState.IsValid)
             {
-                _context.Books.Update(book); // Aktualizowanie książki w bazie
-                return RedirectToAction("Index"); // Po zapisaniu przekierowanie na stronę główną
+                _context.Books.Update(book);
+                return RedirectToAction("Index");
             }
             return View(book);
         }
 
-        // Akcja usuwania książki
         public IActionResult Delete(int id)
         {
-            if (!IsAdmin())
+            if (!User.IsInRole("Admin"))
             {
                 return RedirectToAction("Index");
             }
 
-            var book = _context.Books.FindById(id); // Znalezienie książki po ID
+            var book = _context.Books.FindById(id);
             if (book == null)
             {
                 return NotFound();
             }
 
-            _context.Books.Delete(id); // Usunięcie książki z bazy
-            return RedirectToAction("Index"); // Po usunięciu przekierowanie na stronę główną
+            _context.Books.Delete(id);
+            return RedirectToAction("Index");
         }
     }
 }
