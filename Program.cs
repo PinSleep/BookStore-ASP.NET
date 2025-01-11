@@ -1,24 +1,27 @@
-﻿using BookStore.Data;
+using BookStore.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Rejestracja LiteDBContext
-builder.Services.AddSingleton<LiteDBContext>(); // Dodajemy usługę LiteDBContext
+builder.Services.AddSingleton<LiteDBContext>();
 
-// Dodanie autoryzacji na podstawie ciasteczek
-builder.Services.AddAuthentication("CookieAuth")
-    .AddCookie("CookieAuth", options =>
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.LoginPath = "/Account/Login"; // Określamy ścieżkę do strony logowania
-        options.AccessDeniedPath = "/Account/AccessDenied"; // Określamy, gdzie użytkownik trafi, gdy nie będzie miał uprawnień
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
     });
+
+
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession();
 
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Ustawienia środowiska i konfiguracja pipeline'u HTTP
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -30,12 +33,13 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Używanie autoryzacji w aplikacji
-app.UseAuthentication(); // Dodajemy tę linię, aby aplikacja obsługiwała autoryzację
-app.UseAuthorization();
+app.UseSession();         
+app.UseAuthentication();  
+app.UseAuthorization();   
+
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Book}/{action=Index}/{id?}"); // Upewnij się, że wskazujesz na kontroler Book
+    pattern: "{controller=Book}/{action=Index}/{id?}");
 
 app.Run();
