@@ -1,4 +1,4 @@
-﻿using LiteDB;
+using LiteDB;
 
 namespace BookStore.Data
 {
@@ -9,29 +9,34 @@ namespace BookStore.Data
 
         public LiteDatabase Database => _database ??= new LiteDatabase(_databasePath);
 
-        // Kolekcje
+        
         public ILiteCollection<Book> Books => Database.GetCollection<Book>("Books");
         public ILiteCollection<User> Users => Database.GetCollection<User>("Users");
+        public ILiteCollection<CartItem> CartItems => Database.GetCollection<CartItem>("CartItems");
 
-        // Dodanie domyślnego administratora, jeśli baza jest pusta
+        
         public LiteDBContext()
         {
-            // Sprawdzamy, czy użytkownik admin1 już istnieje w bazie
+            
             var adminExists = Users.Exists(u => u.Username == "admin1");
 
-            // Jeśli użytkownik nie istnieje, dodajemy go
+            
             if (!adminExists)
             {
                 var admin = new User
                 {
                     Username = "admin1",
-                    Password = "admin1", // W przyszłości zaszyfrujemy hasło
+                    Password = "admin1", 
                     IsAdmin = true
                 };
 
-                // Dodanie użytkownika do kolekcji "Users"
+                
                 Users.Insert(admin);
             }
+
+            
+            CartItems.EnsureIndex(x => x.UserId);
+            CartItems.EnsureIndex(x => x.BookId);
         }
     }
 
@@ -49,7 +54,15 @@ namespace BookStore.Data
     {
         public int Id { get; set; }
         public string Username { get; set; }
-        public string Password { get; set; } // Zaszyfrujemy później
+        public string Password { get; set; } /
         public bool IsAdmin { get; set; }
+    }
+
+    // Model pozycji w koszyku
+    public class CartItem
+    {
+        public int Id { get; set; }
+        public int UserId { get; set; }   
+        public int BookId { get; set; }   
     }
 }
