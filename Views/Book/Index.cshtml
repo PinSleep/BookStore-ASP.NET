@@ -1,15 +1,34 @@
-﻿@model IEnumerable<BookStore.Data.Book>
+@model IEnumerable<BookStore.Data.Book>
+
+@{
+    ViewData["Title"] = "BookStore";
+}
 
 <h2>List of Books</h2>
+
+
+<form method="get" asp-action="Index" class="row mb-3">
+    <div class="col-auto">
+        <input type="text" name="searchTerm" class="form-control" placeholder="Search by title or author..." />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-secondary">Search</button>
+    </div>
+</form>
+
 <table class="table">
     <thead>
         <tr>
             <th>Title</th>
             <th>Author</th>
             <th>Price</th>
-            @if (TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"])
+            @if (User.IsInRole("Admin"))
             {
-                <th>Actions</th>
+                <th>Actions (Admin)</th>
+            }
+            else if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <th>Buy</th>
             }
         </tr>
     </thead>
@@ -19,19 +38,49 @@
             <tr>
                 <td>@book.Title</td>
                 <td>@book.Author</td>
-                <td>@book.Price</td>
-                @if (TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"])
+                <!-- CENA W PLN -->
+                <td>@($"{book.Price} PLN")</td>
+
+                @if (User.IsInRole("Admin"))
                 {
                     <td>
                         <a asp-action="Edit" asp-route-id="@book.Id" class="btn btn-warning">Edit</a>
                         <a asp-action="Delete" asp-route-id="@book.Id" class="btn btn-danger">Delete</a>
                     </td>
                 }
+                else if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <td>
+                        <button class="btn btn-success buy-button" data-id="@book.Id">Buy</button>
+                    </td>
+                }
             </tr>
         }
     </tbody>
 </table>
-@if (TempData["IsAdmin"] != null && (bool)TempData["IsAdmin"])
+
+@if (User.IsInRole("Admin"))
 {
+    
     <a asp-action="Create" class="btn btn-primary">Add New Book</a>
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $(".buy-button").click(function (e) {
+                e.preventDefault();
+                var bookId = $(this).data("id");
+
+                $.get("/Cart/Add", { bookId: bookId }, function (data) {
+                    if (data.success) {
+                        alert("Book added to cart!");
+                    } else {
+                        alert("Error: " + data.message);
+                    }
+                });
+            });
+        });
+    </script>
 }
