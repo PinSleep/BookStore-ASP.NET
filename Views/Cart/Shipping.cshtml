@@ -1,0 +1,111 @@
+﻿@model BookStore.Models.ShippingViewModel
+@{
+    ViewData["Title"] = "Shipping";
+}
+
+<h2>Shipping Details</h2>
+
+<form asp-action="Shipping" method="post">
+    <div class="mb-3">
+        <label asp-for="FirstName" class="form-label"></label>
+        <input asp-for="FirstName" class="form-control" />
+        <span asp-validation-for="FirstName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LastName" class="form-label"></label>
+        <input asp-for="LastName" class="form-control" />
+        <span asp-validation-for="LastName" class="text-danger"></span>
+    </div>
+
+    <!-- Usunięte Company oraz ApartmentNumber -->
+
+    <div class="mb-3 row">
+        <div class="col">
+            <label asp-for="PhonePrefix" class="form-label"></label>
+            <input asp-for="PhonePrefix" class="form-control" />
+            <span asp-validation-for="PhonePrefix" class="text-danger"></span>
+        </div>
+        <div class="col">
+            <label asp-for="PhoneNumber" class="form-label"></label>
+            <input asp-for="PhoneNumber" class="form-control" />
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Country" class="form-label"></label>
+        <input asp-for="Country" class="form-control" />
+        <span asp-validation-for="Country" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3 row">
+        <div class="col">
+            <label asp-for="Street" class="form-label"></label>
+            <input asp-for="Street" class="form-control" />
+            <span asp-validation-for="Street" class="text-danger"></span>
+        </div>
+        <div class="col">
+            <label asp-for="BuildingNumber" class="form-label"></label>
+            <input asp-for="BuildingNumber" class="form-control" />
+            <span asp-validation-for="BuildingNumber" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3 row">
+        <div class="col">
+            <label asp-for="PostalCode" class="form-label"></label>
+            <input asp-for="PostalCode" class="form-control" />
+            <span asp-validation-for="PostalCode" class="text-danger"></span>
+        </div>
+        <div class="col">
+            <label asp-for="City" class="form-label"></label>
+            <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger"></span>
+        </div>
+    </div>
+
+    <p class="text-muted">
+        The order will be sent when the appropriate amount is sent via BLIK to the number <strong>+48 797461008</strong>.
+    </p>
+
+    <button type="submit" class="btn btn-primary">Place an order</button>
+</form>
+
+<!-- Walidacja Razor -->
+<div>
+    <partial name="_ValidationScriptsPartial" />
+</div>
+
+<!-- Popup "Order has been created" -->
+<div class="modal fade" id="orderCreatedModal" tabindex="-1" aria-labelledby="orderCreatedLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderCreatedLabel">Order status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Order has been created.
+            </div>
+            <div class="modal-footer">
+                <a asp-controller="Book" asp-action="Index" class="btn btn-primary">Go back to library</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@3.2.12/dist/jquery.validate.unobtrusive.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            var orderSuccess = '@(ViewBag.OrderSuccess?.ToString() ?? "False")';
+            if (orderSuccess === "True") {
+                $("#orderCreatedModal").modal("show");
+            }
+        });
+    </script>
+}
