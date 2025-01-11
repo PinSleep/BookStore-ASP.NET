@@ -1,5 +1,8 @@
 using BookStore.Data;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace BookStore.Controllers
 {
@@ -15,69 +18,97 @@ namespace BookStore.Controllers
         // Widok logowania
         public IActionResult Login()
         {
+            
             return View();
         }
 
-        // Akcja logowania
+        
         [HttpPost]
-        public IActionResult Login(string username, string password)
+        public async Task<IActionResult> Login(string username, string password)
         {
+            
             var user = _dbContext.Users.FindOne(u => u.Username == username && u.Password == password);
 
             if (user != null)
             {
-                TempData["Username"] = user.Username;
-                TempData["IsAdmin"] = user.IsAdmin;
-                TempData.Keep();
+                
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+                };
 
-                // Dodanie ciasteczka uwierzytelniającego
-                HttpContext.Response.Cookies.Append("Username", user.Username);
+                
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+                
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+
+                
                 return RedirectToAction("Index", "Book");
             }
 
+            
             ViewBag.Error = "Invalid username or password";
             return View();
         }
 
-        // Widok rejestracji
+        
         public IActionResult Register()
         {
+            
             return View();
         }
 
-        // Akcja rejestracji
+        
         [HttpPost]
-        public IActionResult Register(string username, string password)
+        public async Task<IActionResult> Register(string username, string password)
         {
+            
             if (_dbContext.Users.Exists(u => u.Username == username))
             {
                 ViewBag.Error = "User already exists.";
                 return View();
             }
 
+            
             var newUser = new User
             {
                 Username = username,
                 Password = password,
-                IsAdmin = false // Domyślnie użytkownik nie jest adminem
+                IsAdmin = false 
             };
-
             _dbContext.Users.Insert(newUser);
 
-            TempData["Username"] = username;
-            TempData["IsAdmin"] = newUser.IsAdmin;
-            TempData.Keep();
+            
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, newUser.Username),
+                new Claim(ClaimTypes.Role, newUser.IsAdmin ? "Admin" : "User")
+            };
 
-            HttpContext.Response.Cookies.Append("Username", username);
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+            
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+
             return RedirectToAction("Index", "Book");
         }
 
         // Akcja wylogowania
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            TempData.Clear();
-            HttpContext.Response.Cookies.Delete("Username");
+            
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Book");
+        }
+
+        
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
     }
 }
